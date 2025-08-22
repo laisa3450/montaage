@@ -43,6 +43,169 @@ export default function Auth() {
         }
         toast.success("Account created! Check your email to verify.");
       } else {
+        let loginEmail = emailOrUsername;
+
+        if (!isEmail(emailOrUsername)) {
+          const { error: directError } = await supabase.auth.signInWithPassword({
+            email: emailOrUsername,
+            password,
+          });
+
+          if (!directError) {
+            toast.success("Welcome back!");
+            navigate("/");
+            return null;
+          } else {
+            throw new Error("Please use your email address to log in");
+          }
+        }
+
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password,
+        });
+        if (loginError) throw loginError;
+        toast.success("Welcome back!");
+        navigate("/");
+        return null;
+      }
+    } catch (err: any) {
+      setShake(true);
+      toast.error(err.message || "Invalid credentials");
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    const resetEmail = mode === "login" ? emailOrUsername : email;
+    if (!resetEmail) return toast.error("Enter your email first");
+    if (!isEmail(resetEmail)) return toast.error("Please enter a valid email address");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail);
+    if (error) toast.error(error.message);
+    else toast.success("Check your email for password reset link");
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-threads-gray p-4">
+      <div className="mb-8">
+        <div className="w-16 h-16 rounded-2xl bg-threads-accent flex items-center justify-center text-white text-2xl font-bold">
+          @
+        </div>
+      </div>
+      <div
+        className={clsx(
+          "bg-white rounded-2xl border border-threads-border w-full max-w-sm p-8 space-y-6 transition-transform",
+          shake && "animate-shake"
+        )}
+      >
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-threads-text mb-2">
+            {mode === "login" ? "Log in" : "Sign up"}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {mode === "login" ? "Welcome back to Threads" : "Join the conversation"}
+          </p>
+        </div>
+        <div className="space-y-4">
+          {mode === "login" ? (
+            <div className="relative">
+              <FiAtSign className="absolute top-3.5 left-3 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Email or username"
+                value={emailOrUsername}
+                onChange={(e) => setEmailOrUsername(e.target.value)}
+                className="w-full pl-10 pr-3 py-3 border border-threads-border bg-white rounded-lg focus:ring-1 focus:ring-threads-accent focus:border-threads-accent outline-none transition text-threads-text placeholder-gray-400"
+              />
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <FiUser className="absolute top-3.5 left-3 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3 border border-threads-border bg-white rounded-lg focus:ring-1 focus:ring-threads-accent focus:border-threads-accent outline-none transition text-threads-text placeholder-gray-400"
+                />
+              </div>
+              <div className="relative">
+                <FiAtSign className="absolute top-3.5 left-3 text-gray-400 w-4 h-4" />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-3 py-3 border border-threads-border bg-white rounded-lg focus:ring-1 focus:ring-threads-accent focus:border-threads-accent outline-none transition text-threads-text placeholder-gray-400"
+                />
+              </div>
+            </>
+          )}
+          <div className="relative">
+            <FiLock className="absolute top-3.5 left-3 text-gray-400 w-4 h-4" />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full pl-10 pr-3 py-3 border border-threads-border bg-white rounded-lg focus:ring-1 focus:ring-threads-accent focus:border-threads-accent outline-none transition text-threads-text placeholder-gray-400"
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleAuth}
+          disabled={loading}
+          className={clsx(
+            "w-full py-3 rounded-lg font-semibold text-white text-sm bg-threads-accent",
+            "hover:bg-gray-800 transition-colors",
+            loading && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {loading ? "Loading..." : mode === "login" ? "Log in" : "Sign up"}
+        </button>
+        {mode === "login" && (
+          <div className="text-center">
+            <button
+              className="text-sm text-gray-500 hover:text-threads-text transition-colors"
+              onClick={handleReset}
+            >
+              Forgot password?
+            </button>
+          </div>
+        )}
+        <div className="text-center pt-4 border-t border-threads-border">
+          <span className="text-sm text-gray-500">
+            {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+          </span>
+          <button
+            className="text-sm font-semibold text-threads-accent hover:underline"
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setEmailOrUsername("");
+              setEmail("");
+              setUsername("");
+              setPassword("");
+            }}
+          >
+            {mode === "login" ? "Sign up" : "Log in"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+    }
+        if (signUpData.user) {
+          await supabase.from("profiles").insert({
+            user_id: signUpData.user.id,
+            username,
+          });
+        }
+        toast.success("Account created! Check your email to verify.");
+      } else {
         // For login, try as email first, then as username
         let loginEmail = emailOrUsername;
 
